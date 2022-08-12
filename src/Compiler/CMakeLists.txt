@@ -30,9 +30,7 @@ add_onnx_mlir_library(CompilerOptions
   EXCLUDE_FROM_OM_LIBS
 
   DEPENDS
-  Accelerator
   ExternalUtil
-  AcceleratorsInc
 
   INCLUDE_DIRS PRIVATE
   ${FILE_GENERATE_DIR}
@@ -42,7 +40,6 @@ add_onnx_mlir_library(CompilerOptions
 
   LINK_LIBS PUBLIC
   MLIRIR
-  Accelerator
   )
 
 add_onnx_mlir_library(CompilerPasses
@@ -133,8 +130,6 @@ add_onnx_mlir_library(CompilerUtils
   LINK_LIBS PUBLIC
   ${OMLibs}
   CompilerPasses
-  Accelerator
-  InitAccelerators
   OMVersion
 
   # Link LLVM libraries necessary to query which target architectures are configured.

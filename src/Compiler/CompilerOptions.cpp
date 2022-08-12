@@ -90,16 +90,6 @@ llvm::cl::opt<std::string> march("march",
     llvm::cl::value_desc("Target a specific architecture type"),
     llvm::cl::cat(OnnxMlirOptions), llvm::cl::ValueRequired);
 
-llvm::cl::list<accel::Accelerator::Kind> maccel("maccel",
-    llvm::cl::desc("Specify an accelerator to generate code for"),
-    // clang-format off
-    llvm::cl::values(
-      APPLY_TO_ACCELERATORS(CREATE_ACCEL_CL_ENUM)
-      clEnumValN(accel::Accelerator::Kind::NONE, "NONE", "No accelerator")
-    ),
-    // clang-format on
-    llvm::cl::cat(OnnxMlirCommonOptions), llvm::cl::ValueRequired);
-
 llvm::cl::opt<bool> VerboseOutput("v", llvm::cl::desc("Use verbose output"),
     llvm::cl::init(false), llvm::cl::cat(OnnxMlirOptions));
 
@@ -231,51 +221,6 @@ std::string getTargetCPUOption() {
   return (mcpu != "") ? "--mcpu=" + mcpu : "";
 }
 
-// Support for Accel.
-static bool getAccelKindFromString(
-    accel::Accelerator::Kind &kind, const std::string &str) {
-  // Test each existing accelerator, returning its Kind when found.
-  APPLY_TO_ACCELERATORS(ACCEL_CL_ENUM_FROM_STRING, kind, str);
-  // No specific accelerator found, check if we have Kind::NONE
-  kind = accel::Accelerator::Kind::NONE;
-  return str.compare(std::string("NONE")) == 0;
-}
-
-// Return 0 on success, nonzero on error.
-int setTargetAccel(const std::string &str) {
-  assert(str != "" && "Expecting valid accelerator description");
-  accel::Accelerator::Kind accelKind;
-  if (getAccelKindFromString(accelKind, str)) {
-    setTargetAccel(accelKind);
-    return 0;
-  }
-  return 1;
-}
-
-void setTargetAccel(const accel::Accelerator::Kind accel) {
-  LLVM_DEBUG(llvm::dbgs() << DEBUG_TYPE << "Set accel\"" << accel << "\"\n";);
-  // Add accel to maccel.
-  maccel.push_back(accel);
-}
-
-void clearTargetAccel() {
-  LLVM_DEBUG(llvm::dbgs() << DEBUG_TYPE << "Clearing accel\n");
-  maccel.clear();
-}
-
-std::string getTargetAccel() {
-  std::stringstream ss;
-  int accelCount = 0;
-  for (accel::Accelerator::Kind accel : maccel) {
-    if (accelCount++)
-      ss << " ";
-    ss << "--maccel=" << accel;
-  }
-  if (!accelCount)
-    ss << "--maccel=NONE";
-  return ss.str();
-}
-
 // Support for Optimization level.
 void setOptLevel(const OptLevel level) {
   LLVM_DEBUG(llvm::dbgs() << DEBUG_TYPE << "Set opt level " << level << "\n");
@@ -356,10 +301,6 @@ int setCompilerOption(const OptionKind kind, const std::string &val) {
   case OptionKind::TargetCPU:
     setTargetCPU(val);
     break;
-  case OptionKind::TargetAccel:
-    if (setTargetAccel(val) != 0)
-      return InvalidCompilerOption;
-    break;
   case OptionKind::CompilerOptLevel: {
     int level = atoi(val.c_str());
     if (level < 0 || level > 3)
@@ -391,9 +332,6 @@ void clearCompilerOption(const OptionKind kind) {
   case OptionKind::TargetCPU:
     clearTargetCPU();
     break;
-  case OptionKind::TargetAccel:
-    clearTargetAccel();
-    break;
   case OptionKind::CompilerOptLevel:
     clearOptLevel();
     break;
@@ -418,22 +356,10 @@ std::string getCompilerOption(const OptionKind kind) {
     return getTargetArchOption();
   case OptionKind::TargetCPU:
     return getTargetCPUOption();
-  case OptionKind::TargetAccel:
-    return getTargetAccel();
   case OptionKind::CompilerOptLevel:
     return getOptimizationLevelOption();
   case OptionKind::OPTFlag:
-  case OptionKind::LLCFlag: {
-    std::vector<std::string> flags =
-        (kind == OptionKind::OPTFlag) ? getXoptOption() : getXllcOption();
-    std::stringstream ss;
-    for (int i = 0, n = flags.size(); i < n; ++i) {
-      ss << flags.at(i);
-      if (i != n - 1)
-        ss << ' ';
-    }
-    return ss.str();
-  }
+  case OptionKind::LLCFlag:
   case OptionKind::LLVMFlag:
     return getLLVMOption();
   }

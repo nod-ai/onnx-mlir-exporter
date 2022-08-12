@@ -15,15 +15,3 @@
 #pragma once
 #include "mlir/Pass/PassManager.h"
 
-namespace onnx_mlir {
-void addONNXToMLIRPasses(mlir::PassManager &pm);
-void addONNXToKrnlPasses(mlir::PassManager &pm, int optLevel, bool enableCSE,
-    bool enableInstrumentONNXSignature);
-void addKrnlToAffinePasses(mlir::PassManager &pm);
-void addKrnlToLLVMPasses(
-    mlir::OpPassManager &pm, bool enableCSE, bool verifyInputTensors);
-InputIRLevelType determineInputIRLevel(
-    mlir::OwningOpRef<mlir::ModuleOp> &module);
-void addPasses(mlir::OwningOpRef<mlir::ModuleOp> &module, mlir::PassManager &pm,
-    EmissionTargetType emissionTarget);
-} // namespace onnx_mlir

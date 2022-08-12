@@ -14,7 +14,6 @@
 
 #pragma once
 #include "onnx-mlir/Compiler/OMCompilerTypes.h"
-#include "src/Accelerators/Accelerator.hpp"
 #include "llvm/Support/CommandLine.h"
 #include <map>
 #include <string>
@@ -41,7 +40,6 @@ extern llvm::cl::opt<onnx_mlir::OptLevel> OptimizationLevel;
 extern llvm::cl::opt<std::string> mtriple;
 extern llvm::cl::opt<std::string> mcpu;
 extern llvm::cl::opt<std::string> march;
-extern llvm::cl::list<onnx_mlir::accel::Accelerator::Kind> maccel;
 extern llvm::cl::opt<bool> VerboseOutput;
 extern llvm::cl::list<std::string> Xopt;
 extern llvm::cl::list<std::string> Xllc;
@@ -66,11 +64,6 @@ std::string getTargetArchOption();
 void setTargetCPU(const std::string &cpu);
 void clearTargetCPU();
 std::string getTargetCPUOption();
-
-int setTargetAccel(const std::string &str);
-void setTargetAccel(const accel::Accelerator::Kind accel);
-void clearTargetAccel();
-std::string getTargetAccel();
 
 void setOptLevel(const onnx_mlir::OptLevel level);
 void clearOptLevel();

@@ -31,10 +31,5 @@ using namespace mlir;
 
 namespace onnx_mlir {
 
-void addPasses(mlir::OwningOpRef<ModuleOp> &module, mlir::PassManager &pm,
-    EmissionTargetType emissionTarget) {
-  pm.addPass(mlir::createSymbolDCEPass());
-}
-
 } // namespace onnx_mlir
 

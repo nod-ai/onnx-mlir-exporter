@@ -27,7 +27,6 @@
 #include "llvm/Target/TargetMachine.h"
 
 #include "ExternalUtil.hpp"
-#include "src/Accelerators/Accelerator.hpp"
 #include "src/Compiler/CompilerOptions.hpp"
 #include "src/Compiler/CompilerPasses.hpp"
 #include "src/Compiler/CompilerUtils.hpp"
@@ -833,17 +832,6 @@ static int setupModule(mlir::OwningOpRef<ModuleOp> &module,
   moduleOp.setAttr(LLVM::LLVMDialect::getDataLayoutAttrName(),
       StringAttr::get(&context, getDataLayout(loc)));
 
-  // Set the module target accelerators.
-  SmallVector<Attribute, 2> accelsAttr;
-  for (auto *accel : onnx_mlir::accel::Accelerator::getAccelerators()) {
-    std::ostringstream versionNumber;
-    versionNumber << std::hex << accel->getVersionNumber();
-    std::string accelStr = accel->getName() + "-0x" + versionNumber.str();
-    accelsAttr.emplace_back(StringAttr::get(&context, accelStr));
-  }
-  if (!accelsAttr.empty())
-    moduleOp.setAttr("onnx-mlir.accels", ArrayAttr::get(&context, accelsAttr));
-
   if (keepFiles(KeepFilesOfType::MLIR)) {
     std::string mlirNameWithExt = outputNameNoExt + ".input.mlir";
     int rc = outputCode(module, mlirNameWithExt);
@@ -872,27 +860,12 @@ static int emitOutput(mlir::OwningOpRef<ModuleOp> &module,
 int compileModule(mlir::OwningOpRef<ModuleOp> &module,
     mlir::MLIRContext &context, std::string outputNameNoExt,
     EmissionTargetType emissionTarget) {
-  // Initialize accelerator(s) if required.
-  if (!maccel.empty())
-    onnx_mlir::accel::initAccelerators(maccel);
 
   int rc = setupModule(module, context, outputNameNoExt);
   if (rc != CompilerSuccess)
     return rc;
 
   mlir::PassManager pm(&context, mlir::OpPassManager::Nesting::Implicit);
-  // TODO(tung): Revise adding passes. The current mechanism does not work if
-  // there are multiple accelerators enabled at the same time. It's because
-  // each `accel->addPasses` is independent and controls the whole compilation
-  // pipeline.
-  bool hasAccel = false;
-  for (auto *accel : onnx_mlir::accel::Accelerator::getAccelerators()) {
-    hasAccel = true;
-    accel->getOrLoadDialects(context);
-    accel->addPasses(module, pm, emissionTarget);
-  }
-  if (!hasAccel)
-    addPasses(module, pm, emissionTarget);
   mlir::applyPassManagerCLOptions(pm);
   mlir::applyDefaultTimingPassManagerCLOptions(pm);
 
