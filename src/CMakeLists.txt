@@ -6,6 +6,7 @@ add_subdirectory(Support)
 add_subdirectory(Builder)
 add_subdirectory(Version)
 add_subdirectory(Compiler)
+add_subdirectory(Transform)
 
 add_onnx_mlir_executable(onnx-mlir
   onnx-mlir.cpp
